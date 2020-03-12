@@ -1,0 +1,15 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+# compiled output
+/data
+/static
+/countlog
+
+# dependencies
+/node_modules
+
+# IDEs and editors
+
+# System Files
+.DS_Store
+Thumbs.db
