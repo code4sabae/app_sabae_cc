@@ -1,0 +1,26 @@
+{
+  "name": "app_sabae_cc",
+  "version": "1.0.0",
+  "description": "API by Code for Sabae",
+  "main": "app_sabae_cc.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/code4sabae/app_sabae_cc.git"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/code4sabae/app_sabae_cc/issues"
+  },
+  "homepage": "https://github.com/code4sabae/app_sabae_cc#readme",
+  "devDependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "fs": "0.0.1-security",
+    "http": "0.0.0",
+    "node-fetch": "^2.6.0",
+    "url": "^0.11.0"
+  }
+}

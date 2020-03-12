@@ -29,7 +29,7 @@ const getYMD = function() {
 //
 const getCovid19Data = async function() {
   const path = 'data/covid19tokushima/'
-  const fn = path + getYMD() + ".html"
+  const fn = path + getYMDH() + ".html"
   try {
     return fs.readFileSync(fn, 'utf-8')
   } catch (e) {
@@ -38,6 +38,7 @@ const getCovid19Data = async function() {
     try {
       fs.writeFileSync(fn, html)
     } catch (e) {
+      fs.mkdirSync('data', 0744)
       fs.mkdirSync(path, 0744)
       fs.writeFileSync(fn, html)
     }
@@ -186,9 +187,12 @@ const main = async function() {
   console.log(data)
   console.log(await getCovid19DataSummaryForIchigoJam())
 }
-//main()
 
-startUpdate()
+if (require.main === module) {
+  main()
+} else {
+  startUpdate()
+}
 
 exports.getCovid19DataDaily = getCovid19DataDaily
 exports.getCovid19DataSummaryForIchigoJam = getCovid19DataSummaryForIchigoJam

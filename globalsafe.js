@@ -1,8 +1,6 @@
 const http = require('http')
 const fs = require('fs')
-// const url = require('url')
 const fetch = require('node-fetch')
-//const xml2json = require('xml2json')
 
 
 function makeJSON(xml) {
