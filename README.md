@@ -1,10 +1,11 @@
 # app_sabae_cc
 API by Code for Sabae
 
+# set up
 npm install  
 
-# to test the scraping from Tokushima web site
+# test the scraping from Tokushima web site
 node covid19tokushima.js  
 
-# to run API server
+# run API server
 node app_sabae_cc.js  
