@@ -23,6 +23,7 @@ covid19tokyo.startUpdateCovid19TokyoData()
 
 const covid19fukui = require('./covid19fukui.js')
 const covid19tokushima = require('./covid19tokushima.js')
+const covid19ishikawa = require('./covid19ishikawa.js')
 
 const googlespreadsheet = require('./googlespreadsheet.js')
 
@@ -35,14 +36,22 @@ const getYMDH = function() {
   return t.getFullYear() + fix0(t.getMonth() + 1, 2) + fix0(t.getDate(), 2) + fix0(t.getHours(), 2)
 }
 const countLog = function(name) {
-  const fn = "countlog/" + name + "-" + getYMDH() + ".txt"
+  name = name.replace(/[\/|\¥|\?]/g, '-')
+  console.log(name)
+  const path = "countlog/" + name + "/"
+  const fn = path + getYMDH() + ".txt"
   let n = 0
   try {
     n = parseInt(fs.readFileSync(fn, 'utf-8'))
   } catch (e) {
   }
   n++
-  fs.writeFileSync(fn, "" + n, 'utf-8')
+  try {
+    fs.writeFileSync(fn, "" + n, 'utf-8')
+  } catch (e) {
+    fs.mkdirSync(path, 0744)
+    fs.writeFileSync(fn, "" + n, 'utf-8')
+  }
 }
 
 const server = http.createServer()
@@ -55,6 +64,7 @@ server.on('request', async function(req, res) {
     serveStatic(res, req.url)
     return
   }
+  countLog(req.url)
 
   if (req.url == '/api/taiwan_masks.json') {
     const data = await taiwanmask.getMasksDataTaiwan()
@@ -108,7 +118,16 @@ server.on('request', async function(req, res) {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
     res.end(data)
     return
-
+  } else if (req.url.startsWith('/api/covid19ishikawa.json')) {
+    const data = await covid19ishikawa.getCovid19DataJSON()
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
+    res.end(JSON.stringify(data))
+    return
+  } else if (req.url.startsWith('/api/covid19ishikawa.txt')) {
+    const data = await covid19ishikawa.getCovid19DataSummaryForIchigoJam()
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
+    res.end(data)
+    return
   } else if (req.url.startsWith('/api/googlespreadsheet.json')) {
     const params = urllib.parse(req.url, true)
     const key = params.query.key
@@ -117,10 +136,10 @@ server.on('request', async function(req, res) {
     res.end(JSON.stringify(data))
     return
   } else if (req.url.startsWith('/proxy/')) {
+    //countLog('proxy')
     const params = urllib.parse(req.url, true)
     const url = params.query.url
     //console.log(url)
-    countLog("proxy")
     if (url) {
       const n = url.lastIndexOf('.')
       let ext = ".txt"

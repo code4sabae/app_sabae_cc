@@ -5,7 +5,12 @@ const fs = require('fs')
 const fetch = require('node-fetch')
 
 function saveData(fn, data) {
-  fs.writeFileSync('data/taiwanmask/' + fn, data)
+  try {
+    fs.writeFileSync('data/taiwanmask/' + fn, data)
+  } catch (e) {
+    fs.mkdirSync('data/taiwanmask', 0744)
+    fs.writeFileSync('data/taiwanmask/' + fn, data)
+  }
   //JSON.stringify(data))
 }
 function loadData(fn) {
