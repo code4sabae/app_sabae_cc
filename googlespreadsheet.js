@@ -2,30 +2,6 @@ const http = require('http')
 const fs = require('fs')
 const fetch = require('node-fetch')
 
-const simplejson2txt = function(json) {
-  const res = []
-  for (const name in json) {
-    res.push(name)
-    res.push(json[name])
-  }
-  res.splice(0, 0, res.length / 2)
-  res.push('')
-  return res.join('\r\n')
-}
-const fix0 = function(n, beam) {
-  const s = "000000000" + n
-  return s.substring(s.length - beam)
-}
-const getYMDH = function() {
-  const t = new Date()
-  return t.getFullYear() + fix0(t.getMonth() + 1, 2) + fix0(t.getDate(), 2) + fix0(t.getHours(), 2)
-}
-const getYMD = function() {
-  const t = new Date()
-  return t.getFullYear() + fix0(t.getMonth() + 1, 2) + fix0(t.getDate(), 2)
-}
-
-//
 const convertCSVtoArray = function(s) {
 	const res = []
 	let st = 0
@@ -122,8 +98,9 @@ const main = async function() {
   const data = await fetchCSVfromGoogleSpreadSheet(key)
   console.log(data)
 }
-//main()
-
-//startUpdate()
+if (require.main === module) {
+  main()
+} else {
+}
 
 exports.fetchCSVfromGoogleSpreadSheet = fetchCSVfromGoogleSpreadSheet

@@ -4,6 +4,7 @@ const http = require('http')
 const urllib = require('url')
 const fetch = require('node-fetch')
 const fs = require('fs')
+const util = require('./util.js')
 
 const PROXY_CONTENT_TYPE = {
   ".txt": "text/plain; charset=utf-8",
@@ -12,34 +13,22 @@ const PROXY_CONTENT_TYPE = {
   ".csv": "text/csv; charset=utf-8",
 }
 
-const taiwanmask = require('./taiwanmask.js')
-taiwanmask.startUpdateMasksDataTaiwan()
-
 const globalsafe = require('./globalsafe.js')
-globalsafe.startUpdateGlobalSafeData()
+
+const taiwanmask = require('./taiwanmask.js')
 
 const covid19tokyo = require('./covid19tokyo.js')
-covid19tokyo.startUpdateCovid19TokyoData()
-
 const covid19fukui = require('./covid19fukui.js')
 const covid19tokushima = require('./covid19tokushima.js')
 const covid19ishikawa = require('./covid19ishikawa.js')
 
 const googlespreadsheet = require('./googlespreadsheet.js')
 
-const fix0 = function(n, beam) {
-  const s = "000000000" + n
-  return s.substring(s.length - beam)
-}
-const getYMDH = function() {
-  const t = new Date()
-  return t.getFullYear() + fix0(t.getMonth() + 1, 2) + fix0(t.getDate(), 2) + fix0(t.getHours(), 2)
-}
 const countLog = function(name) {
   name = name.replace(/[\/|\¥|\?]/g, '-')
   console.log(name)
   const path = "countlog/" + name + "/"
-  const fn = path + getYMDH() + ".txt"
+  const fn = path + util.getYMDH() + ".txt"
   let n = 0
   try {
     n = parseInt(fs.readFileSync(fn, 'utf-8'))
@@ -84,32 +73,27 @@ server.on('request', async function(req, res) {
     res.end(JSON.stringify(data))
     return
   } else if (req.url.startsWith('/api/covid19tokyo.json')) {
-    const data = await covid19tokyo.getCovid19TokyoDataSummary()
+    const data = await covid19tokyo.getCovid19DataSummary()
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
     res.end(JSON.stringify(data))
     return
   } else if (req.url.startsWith('/api/covid19tokyo.txt')) {
-    const data = await covid19tokyo.getCovid19TokyoDataSummaryForIchigoJam()
+    const data = await covid19tokyo.getCovid19DataSummaryForIchigoJam()
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
     res.end(data)
     return
   } else if (req.url.startsWith('/api/covid19fukui.json')) {
-    const data = await covid19fukui.getCovid19FukuiDataSummary()
+    const data = await covid19fukui.getCovid19DataJSON()
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
     res.end(JSON.stringify(data))
     return
   } else if (req.url.startsWith('/api/covid19fukui.txt')) {
-    const data = await covid19fukui.getCovid19FukuiDataSummaryForIchigoJam()
+    const data = await covid19fukui.getCovid19DataSummaryForIchigoJam()
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
     res.end(data)
     return
-  } else if (req.url.startsWith('/api/covid19fukui-weekly.json')) {
-    const data = await covid19fukui.getCovid19FukuiDataWeekly()
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
-    res.end(JSON.stringify(data))
-    return
   } else if (req.url.startsWith('/api/covid19tokushima.json')) {
-    const data = await covid19tokushima.getCovid19DataDaily()
+    const data = await covid19tokushima.getCovid19DataJSON()
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
     res.end(JSON.stringify(data))
     return

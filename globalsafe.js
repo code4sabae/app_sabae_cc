@@ -2,7 +2,6 @@ const http = require('http')
 const fs = require('fs')
 const fetch = require('node-fetch')
 
-
 function makeJSON(xml) {
 	let obj = {}
 	if (xml.nodeType == 1) { // element
@@ -184,8 +183,7 @@ const getGlobalSafeDataByKeyword = function(key, limit) {
 }
 
 const main = async function() {
-  
-  startUpdateGlobalSafeData()
+  //startUpdateGlobalSafeData()
 
   const d = getGlobalSafeDataByKeyword('カナダ イラン', 100)
   console.log(d)
@@ -197,7 +195,10 @@ const main = async function() {
   console.log(data.opendata.mail[0])
   */
 }
-//main()
+if (require.main === module) {
+  main()
+} else {
+  startUpdateGlobalSafeData()
+}
 
-exports.startUpdateGlobalSafeData = startUpdateGlobalSafeData
 exports.getGlobalSafeDataByKeyword = getGlobalSafeDataByKeyword

@@ -1,67 +1,24 @@
-const PORT = 8003
+const util = require('./util.js')
 
-const fs = require('fs')
-// const url = require('url')
-const fetch = require('node-fetch')
+const CACHE_TIME = 5 * 60 * 1000 // 5min
+//const CACHE_TIME = 1 * 1000 // 1sec
+const PATH = 'data/taiwanmask/'
+const URL = 'https://data.nhi.gov.tw/resource/mask/maskdata.csv'
 
-function saveData(fn, data) {
-  try {
-    fs.writeFileSync('data/taiwanmask/' + fn, data)
-  } catch (e) {
-    fs.mkdirSync('data/taiwanmask', 0744)
-    fs.writeFileSync('data/taiwanmask/' + fn, data)
-  }
-  //JSON.stringify(data))
-}
-function loadData(fn) {
-  return fs.readFileSync('data/taiwanmask/' + fn, 'utf-8')
-//  alldata = JSON.parse(fs.readFileSync(PATH_DATA)).results.bindings
-}
-
-const convertCSVtoArray = function(s) {
-	const lines = s.split("\n")
-	const res = []
-	for (let i = 0; i < lines.length; i++) {
-		const ar = lines[i].split(",")
-		res.push(ar)
-	}
-	return res
-}
-const fix0 = function(n, beam) {
-  const s = "000000000" + n
-  return s.substring(s.length - beam)
-}
-const getYMDH = function() {
-  const t = new Date()
-  return t.getFullYear() + fix0(t.getMonth() + 1, 2) + fix0(t.getDate(), 2) + fix0(t.getHours(), 2)
-}
-const fetchMaskData = async function() {
-  const URL = 'https://data.nhi.gov.tw/resource/mask/maskdata.csv'
-  const data = await (await fetch(URL)).text()
-  return data
-}
-const FN_TAIWAN_MASK = 'taiwan-maskdata.csv'
 const getMaskData = async function() {
-  const fn = getYMDH() + "-" + FN_TAIWAN_MASK
-  try {
-    const data = loadData(fn)
-    return data
-  } catch (e) {
-    const data = await fetchMaskData()
-    saveData(fn, data)
-    return data
-  }
+  return await util.getWebWithCache(URL, PATH)
 }
-const startUpdateMasksDataTaiwan = function() {
-  console.log("start job getMaskData")
-  setInterval(function() {
-    getMaskData()
-  }, 5 * 60 * 1000) // every 5min
+const getLastUpdate = function(fn) {
+  return util.getLastUpdateOfCache(URL, PATH)
 }
-
+const startUpdate = function() {
+  setInterval(async function() {
+    await util.getWebWithCache(URL, PATH, CACHE_TIME)
+  }, CACHE_TIME)
+}
 const getMasksDataTaiwan = async function() {
   const csv = await getMaskData()
-  const data = convertCSVtoArray(csv)
+  const data = util.convertCSVtoArray(csv)
   //console.log(data)
 
 	/*
@@ -124,7 +81,7 @@ const len = function(json) {
     n++
   return n
 }
-const test = async function() {
+const main = async function() {
   const data = await getMasksDataTaiwan()
   console.log(data)
   console.log(AREA_TAIWAN)
@@ -150,6 +107,10 @@ const test = async function() {
   }
   console.log(len(data.area))
 }
+if (require.main === module) {
+  main()
+} else {
+  startUpdate()
+}
 
 exports.getMasksDataTaiwan = getMasksDataTaiwan
-exports.startUpdateMasksDataTaiwan = startUpdateMasksDataTaiwan

@@ -1,75 +1,27 @@
-const fs = require('fs')
 const cheerio = require('cheerio')
-const fetch = require('node-fetch')
+const util = require('./util.js')
 
-const simplejson2txt = function(json) {
-  const res = []
-  for (const name in json) {
-    res.push(name)
-    res.push(json[name])
-  }
-  res.splice(0, 0, res.length / 2)
-  res.push('')
-  return res.join('\r\n')
-}
-const fix0 = function(n, beam) {
-  const s = "000000000" + n
-  return s.substring(s.length - beam)
-}
-const getYMDH = function() {
-  const t = new Date()
-  return t.getFullYear() + fix0(t.getMonth() + 1, 2) + fix0(t.getDate(), 2) + fix0(t.getHours(), 2)
-}
-const getYMD = function() {
-  const t = new Date()
-  return t.getFullYear() + fix0(t.getMonth() + 1, 2) + fix0(t.getDate(), 2)
-}
+const CACHE_TIME = 1 * 60 * 60 * 1000 // 1hour
+//const CACHE_TIME = 1 * 60 * 1000 // 1min
+const PATH = 'data/covid19tokushima/'
+const URL = 'https://www.pref.tokushima.lg.jp/ippannokata/kenko/kansensho/5034012'
 
-//
 const getCovid19Data = async function() {
-  const path = 'data/covid19tokushima/'
-  const fn = path + getYMDH() + ".html"
-  try {
-    return fs.readFileSync(fn, 'utf-8')
-  } catch (e) {
-    const URL = 'https://www.pref.tokushima.lg.jp/ippannokata/kenko/kansensho/5034012'
-    const html = await (await fetch(URL)).text()
-    try {
-      fs.writeFileSync(fn, html)
-    } catch (e) {
-      fs.mkdirSync('data', 0744)
-      fs.mkdirSync(path, 0744)
-      fs.writeFileSync(fn, html)
-    }
-    //console.log("write", fn)
-    return html
-  }
+  return await util.getWebWithCache(URL, PATH)
 }
-const cutNoneN = function(s) {
-  s = toHalf(s)
-  const n = parseInt(s.replace(/[^\d]/g, ""))
-  if (isNaN(n))
-    return 0
-  return n
+const getLastUpdate = function(fn) {
+  return util.getLastUpdateOfCache(URL, PATH)
 }
-const toHalf = function(s) {
-  const ZEN = "０１２３４５６７８９（）／"
-  const HAN = "0123456789()/"
-  let s2 = ""
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charAt(i)
-    const n = ZEN.indexOf(c)
-    if (n >= 0) {
-      s2 += HAN.charAt(n)
-    } else {
-      s2 += c
-    }
-  }
-  return s2
+const startUpdate = function() {
+  setInterval(async function() {
+    await util.getWebWithCache(URL, PATH, CACHE_TIME)
+  }, CACHE_TIME)
 }
+
 // '1/30～3/3 -> 2020-01-30/2020-03-03  3月4日（水） -> 2020/03/04
 const parseDate = function(s) {
-  s = toHalf(s)
+  const fix0 = util.fix0
+  s = util.toHalf(s)
   if (s.indexOf('～') >= 0) {
     const num = s.match(/(\d+)\/(\d+)～(\d+)\/(\d+)/)
     //console.log(s, num)
@@ -87,7 +39,7 @@ const parseDate = function(s) {
   const d = num[2]
   return y + "-" + fix0(m, 2) + "-" + fix0(d, 2)
 }
-const getCovid19DataDaily = async function() {
+const getCovid19DataJSON = async function() {
   const data = await getCovid19Data()
   const dom = cheerio.load(data)
   const weeks = []
@@ -111,7 +63,7 @@ const getCovid19DataDaily = async function() {
       if (date.trim() == '累計') {
         state = 2
       } else {
-        weeks.push({ 'date': parseDate(date), 'ncontacts': cutNoneN(general), 'nquerents': cutNoneN(touch) })
+        weeks.push({ 'date': parseDate(date), 'ncontacts': util.cutNoneN(general), 'nquerents': util.cutNoneN(touch) })
       }
     } else if (state == 2) {
       for (let i = 0; i < td.length; i++) {
@@ -129,7 +81,7 @@ const getCovid19DataDaily = async function() {
       if (date.trim() == '累計') {
         state = 4
       } else {
-        inspects.push({ 'date': parseDate(date), 'ninspections': cutNoneN(ninspects), 'npatients': cutNoneN(npatients) })
+        inspects.push({ 'date': parseDate(date), 'ninspections': util.cutNoneN(ninspects), 'npatients': util.cutNoneN(npatients) })
       }
     }
   })
@@ -146,6 +98,7 @@ const getCovid19DataDaily = async function() {
     }
   })
   */
+  res.lastUpdate = getLastUpdate()
   return res
 }
 const calcCovid19DataSummary = function(json) {
@@ -166,23 +119,15 @@ const calcCovid19DataSummary = function(json) {
     //'n_heavy': 0,
     //'n_exit': 0,
     //'n_death': 0,
-    //'s_lastUpdate': json.lastUpdate,
   }
 }
 const getCovid19DataSummaryForIchigoJam = async function() {
-  const json = await getCovid19DataDaily()
-  return simplejson2txt(json.summary)
-}
-
-const startUpdate = function() {
-  console.log("start update covid19tokushima")
-  setInterval(function() {
-    getCovid19Data()
-  }, 1 * 60 * 60 * 1000) // 1hour
+  const json = await getCovid19DataJSON()
+  return util.simplejson2txt(json.summary)
 }
 
 const main = async function() {
-  const data = await getCovid19DataDaily()
+  const data = await getCovid19DataJSON()
   console.log(data)
   console.log(await getCovid19DataSummaryForIchigoJam())
 }
@@ -193,5 +138,5 @@ if (require.main === module) {
   startUpdate()
 }
 
-exports.getCovid19DataDaily = getCovid19DataDaily
+exports.getCovid19DataJSON = getCovid19DataJSON
 exports.getCovid19DataSummaryForIchigoJam = getCovid19DataSummaryForIchigoJam
