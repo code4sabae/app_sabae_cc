@@ -147,7 +147,6 @@ const startUpdate = function() {
 // 令和2年2月24日（県内3例目、4例目）） -> 2020/02/24 2
 const parseDate = function(s) {
   const num = s.match(/令和(\d+)年(\d+)月(\d+)日.+/)
-  //console.log(s, num)
   const y = 2018 + parseInt(num[1])
   const m = parseInt(num[2])
   const d = parseInt(num[3])
@@ -174,14 +173,11 @@ const getCovid19DataJSON = async function() {
   const dom = cheerio.load(data)
   const daily = []
   dom('h2').each((idx, ele) => {
-    //console.log(ele)
     const text = ele.children[0].data
     const d = parseData(text)
     if (d)
       daily.push(d)
-    //console.log(text)
   })
-  //console.log(daily)
   const res = { npatients: daily }
   res.summary = calcCovid19DataSummary(res)
   res.lastUpdate = getLastUpdate()
