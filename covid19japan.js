@@ -2,7 +2,7 @@ const fs = require('fs')
 const fetch = require('node-fetch')
 const cheerio = require('cheerio')
 const util = require('./util.js')
-const pdftotext = require('./pdftotext.js')
+const pdf2text = require('./pdf2text.js')
 
 const CACHE_TIME = 1 * 60 * 60 * 1000 // 1hour
 //const CACHE_TIME = 1 * 60 * 1000 // 1min
@@ -93,7 +93,7 @@ const getJSONbyPDF = async function(dt, url) {
   }
   const pdf = await (await fetch(url)).arrayBuffer()
 	fs.writeFileSync(fn + ".pdf", new Buffer.from(pdf), 'binary')
-  const txt = await pdftotext.pdf2text(fn + ".pdf")
+  const txt = await pdf2text.pdf2text(fn + ".pdf")
   const json = text2json(txt, url, dt)
   fs.writeFileSync(fn + ".json", JSON.stringify(json))
   return json
