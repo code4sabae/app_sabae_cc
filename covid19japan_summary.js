@@ -9,12 +9,12 @@ const PATH = 'data/covid19japan/'
 const URL = 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000164708_00001.html'
 const BASEURL = 'https://www.mhlw.go.jp'
 
-const getCovid19Data = async function() {
-  return await util.getWebWithCache(URL, PATH)
+const getCovid19Data = async function(cachetime) {
+  return await util.getWebWithCache(URL, PATH, cachetime)
 }
 
-const getCovid19DataJSON = async function() {
-  const data = await getCovid19Data()
+const getCovid19DataJSON = async function(cachetime) {
+  const data = await getCovid19Data(cachetime)
   const dom = cheerio.load(data)
   const weeks = []
   const res = {}
@@ -29,7 +29,13 @@ const getCovid19DataJSON = async function() {
         }
       } else if (state == 1) {
         const tag = ele.children[i].name
-        if (tag == 'a' && ele.children[i].children) {
+        if (tag == 'img') {
+          const fn = dom(ele.children[i]).attr('src')
+          url = BASEURL + fn
+          state = 2
+        }
+        /*
+        if (tag == 'a' && ele.children[i].children.length) {
           const tag2 = ele.children[i].children[0].name
           if (tag2 == 'img') {
             const fn = dom(ele.children[i].children[0]).attr('src')
@@ -37,6 +43,7 @@ const getCovid19DataJSON = async function() {
             state = 2
           }
         }
+        */
       }
     }
   })
@@ -44,13 +51,17 @@ const getCovid19DataJSON = async function() {
 }
 const getCurrentPatients = async function(fn) {
   const jpg = await jimp.read(fn)
+  const orgwidth = 2339
+  const ratio = jpg.bitmap.width / orgwidth
   const crops = [
-    [ 'lastUpdate', 1573, 112, 2116 - 1573, 178 - 115 ],
+    //[ 'lastUpdate', 1573, 112, 2116 - 1573, 178 - 115 ],
+    [ 'lastUpdate', 1573, 112 - 10, 2116 - 1573, 178 - 115 + 10 ],
     [ 'npatients', 60, 400, 500, 90 ],
     [ 'nexits', 620, 400, 530, 90 ],
     [ 'ndeaths', 1180, 400, 464, 90 ],
     [ 'ncurrentpatients', 1686, 400, 584, 90 ],
-    [ 'nlighters', 1686, 582, 584, 60 ],
+    //[ 'nlighters', 1686, 582, 584, 60 ], // for first
+    [ 'nlighters', 1686, 562, 584, 60 ],
   ]
   // 3A12H (WN) 18
   const reformatdate = function(s) {
@@ -78,7 +89,7 @@ const getCurrentPatients = async function(fn) {
   for (const crop of crops) {
     const imgc = jpg.clone()
     const name = crop[0]
-    imgc.crop(crop[1], crop[2], crop[3], crop[4])
+    imgc.crop(crop[1] * ratio, crop[2] * ratio, crop[3] * ratio, crop[4] * ratio)
     const text = await img2text.img2text(imgc)
     res[name] = name == 'lastUpdate' ? reformatdate(text) : reformatnum(text)
   }
@@ -94,6 +105,8 @@ const getJSONbyImage = async function(url) {
   const img = await (await fetch(url)).arrayBuffer()
 	fs.writeFileSync(fn, new Buffer.from(img), 'binary')
   const json = await getCurrentPatients(fn)
+  json.srcurl_img = url
+  json.srcurl_web = URL
   fs.writeFileSync(fn + ".json", JSON.stringify(json))
   return json
 }
@@ -103,7 +116,7 @@ const getCovid19DataSummaryForIchigoJam = async function() {
 }
 
 const main = async function() {
-  const data = await getCovid19DataJSON()
+  const data = await getCovid19DataJSON(1000 * 60)
   console.log(data)
   console.log(await getCovid19DataSummaryForIchigoJam())
 }

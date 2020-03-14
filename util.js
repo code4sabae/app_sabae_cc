@@ -91,6 +91,7 @@ exports.getWebWithCache = async function(url, path, cachetime) {
   const fnlatest = path + "_latest" + ext
   const fn = path + exports.getYMDHMS() + ext
   let cache = null
+  //console.log(fn, cachetime)
   try {
     const modtime = fs.statSync(fnlatest).mtime
     const dt = new Date().getTime() - new Date(modtime).getTime()
@@ -105,7 +106,7 @@ exports.getWebWithCache = async function(url, path, cachetime) {
   const data = await (await fetch(url)).text()
   if (data == cache) {
     //console.log("same as cache")
-    fs.writeFileSync(fnlatest, data)
+    //fs.writeFileSync(fnlatest, data)
     return cache
   }
   //console.log("use original")

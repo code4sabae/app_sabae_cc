@@ -28,9 +28,10 @@ const parseDate = function(s) {
     const y = 2020
     const m1 = num[1]
     const d1 = num[2]
-    const m2 = num[2]
-    const d2 = num[3]
-    return y + "-" + fix0(m1, 2) + "-" + fix0(d1, 2) + "/" + y + "-" + fix0(m2, 2) + "-" + fix0(d2, 2)
+    const m2 = num[3]
+    const d2 = num[4]
+    const res = y + "-" + fix0(m1, 2) + "-" + fix0(d1, 2) + "/" + y + "-" + fix0(m2, 2) + "-" + fix0(d2, 2)
+    return res
   }
   const num = s.match(/(\d+)月(\d+)日.+/)
   //console.log(s, num)
@@ -52,7 +53,7 @@ const getCovid19DataJSON = async function() {
         const d = td[i]
         const text = d.children[0].data
         //console.log(i, d.name, d.type, text)
-        if (text.trim() == '帰国者・接触者相談センター') {
+        if (text.trim() == '帰国者・接触者相談センター（保健所）') {
           state = 1
         }
       }
