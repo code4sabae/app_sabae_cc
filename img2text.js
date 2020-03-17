@@ -6,14 +6,15 @@
 const fs = require('fs')
 const child_process = require('child_process')
 
-exports.img2text = async function(img) {
+exports.img2text = async function(img, stayimg) {
   return new Promise((resolve, reject) => {
     const fntxt = 'temp/' + new Date().getTime()
     const fnimg = fntxt + ".png"
     img.write(fnimg)
     const cmd = 'tesseract -l eng ' + fnimg + " " + fntxt
     child_process.exec(cmd, function(error, stdout, stderr) {
-      fs.unlinkSync(fnimg)
+      if (!stayimg)
+        fs.unlinkSync(fnimg)
       if (error) {
         reject(error)
         return

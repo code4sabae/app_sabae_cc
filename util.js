@@ -121,6 +121,40 @@ exports.getWebWithCache = async function(url, path, cachetime) {
   //console.log("write", fn)
   return data
 }
+exports.getCache = async function(asyncfetch, path, ext, cachetime) {
+  const fnlatest = path + "_latest" + ext
+  const fn = path + exports.getYMDHMS() + ext
+  let cache = null
+  //console.log(fn, cachetime)
+  try {
+    const modtime = fs.statSync(fnlatest).mtime
+    const dt = new Date().getTime() - new Date(modtime).getTime()
+    //console.log(dt, new Date(modtime).getTime(), new Date().getTime())
+    cache = fs.readFileSync(fnlatest, 'utf-8')
+    if (!cachetime || dt < cachetime) {
+      //console.log("use cache")
+      return cache
+    }
+  } catch (e) {
+  }
+  let data = await asyncfetch()
+  if (data == cache) {
+    //console.log("same as cache")
+    //fs.writeFileSync(fnlatest, data)
+    return cache
+  }
+  //console.log("use original")
+  try {
+    fs.writeFileSync(fnlatest, data)
+    fs.writeFileSync(fn, data)
+  } catch (e) {
+    exports.mkdirSyncForFile(fn)
+    fs.writeFileSync(fnlatest, data)
+    fs.writeFileSync(fn, data)
+  }
+  //console.log("write", fn)
+  return data
+}
 exports.getLastUpdateOfCache = function(url, path) {
   const fnlatest = path + "_latest" + exports.getExtFromURL(url)
   try {

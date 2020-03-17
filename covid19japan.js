@@ -22,7 +22,6 @@ const startUpdate = function() {
   }, CACHE_TIME)
 }
 
-
 const parseWeek = function(s) {
   s = util.toHalf(s)
   const n = s.indexOf('週')
@@ -63,7 +62,8 @@ const getDataJSON = async function(title, text2json) {
     const text = ele.children[0].data
     if (text && text.startsWith(title)) {
       res.dt = parseDate(text)
-      res.url = BASEURL + dom(ele).attr("href")
+      const href = dom(ele).attr("href")
+      res.url = href.startsWith("https://") ? href : BASEURL + href
     }
   })
   return await getJSONbyPDF(text2json, res.dt, res.url)
@@ -196,6 +196,7 @@ const main = async function() {
   //test()
   //return
 
+  await util.getWebWithCache(URL, PATH, CACHE_TIME)
   const data = await getCovid19DataJSON()
   console.log(data)
   console.log(await getCovid19DataSummaryForIchigoJam())
