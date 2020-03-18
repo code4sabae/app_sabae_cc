@@ -2,6 +2,9 @@ const fs = require('fs')
 const fetch = require('node-fetch')
 
 exports.simplejson2txt = function(json) {
+  if (typeof json == 'string') {
+    json = JSON.parse(json)
+  }
   const res = []
   for (const name in json) {
     res.push(name)
