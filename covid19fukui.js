@@ -4,10 +4,10 @@ const util = require('./util.js')
 const CACHE_TIME = 1 * 60 * 60 * 1000 // 1hour
 //const CACHE_TIME = 1 * 60 * 1000 // 1min
 const PATH = 'data/covid19fukui/'
-const URL = 'https://www.pref.fukui.lg.jp/doc/kenkou/kansensyo-yobousessyu/bukan-haien.html'
+const URL = 'https://www.pref.fukui.lg.jp/doc/kenkou/kansensyo-yobousessyu/corona.html'
 
-const getCovid19Data = async function() {
-  return await util.getWebWithCache(URL, PATH)
+const getCovid19Data = async function(cachetime) {
+  return await util.getWebWithCache(URL, PATH, cachetime)
 }
 const getLastUpdate = function(fn) {
   return util.getLastUpdateOfCache(URL, PATH)
@@ -35,11 +35,11 @@ const parseDate = function(s) {
   const fix0 = util.fix0
   return y + "/" + fix0(m, 2) + "/" + fix0(d, 2) + " " + fix0(h, 2) + ":00"
 }
-const getCovid19DataJSON = async function() {
-  const data = await getCovid19Data()
+const getCovid19DataJSON = async function(cachetime) {
+  const data = await getCovid19Data(cachetime)
   const dom = cheerio.load(data)
   const weeks = []
-  let flg = false
+  /*
   dom('tr').each((idx, ele) => {
     const td = dom(ele).children()
     if (!flg) {
@@ -47,8 +47,10 @@ const getCovid19DataJSON = async function() {
         const d = td[i]
         const text = d.children[0].data
 //        console.log(i, d.name, d.type, text)
-        if (text == '累計検査件数') {
+        //if (text == '累計検査件数') {
+        if (text && text.indexOf('（参考）検査実施状況') >= 0) {
           flg = true
+          console.log("****")
         }
       }
     } else {
@@ -62,15 +64,38 @@ const getCovid19DataJSON = async function() {
       }
     }
   })
-  const res = { 'inspection': weeks }
+  */
+ let state = 0
+ const res = { 'inspection': weeks }
   dom('p').each((idx, ele) => {
-    if (ele.children.length) {
-      const text = ele.children[0].data
-      //console.log(text)
-      if (text && text.indexOf('（参考）検査実施状況') >= 0) {
-        res.lastUpdate = parseDate(text.substring(text.indexOf('　') + 1))
+    if (state == 0) {
+      if (ele.children.length) {
+        const text = ele.children[0].data
+        if (text && text.indexOf('（参考）検査実施状況') >= 0) {
+          res.lastUpdate = parseDate(text.substring(text.indexOf('　') + 1))
+          state = 1
+        }
+      }
+    } else if (state == 1) {
+      if (ele.children.length) {
+        const tbl = dom(ele).next()
+        dom(tbl).find('tr').each((idx, ele) => {
+          const td = dom(ele).children()
+          const week = td[0].children[0].data // ８週（令和２年２月17日～23日）
+          const ninspect = td[1].children[0].data // 検査件数
+          const npatient = td[3].children[0].data // 陽性患者数
+          if (week != "週" && week != '計') {
+            weeks.push({ 'week': parseWeek(week), 'ninspect': util.cutNoneN(ninspect), 'npatient': util.cutNoneN(npatient) })
+          }
+        })
+        state = 2
       }
     }
+    /*
+    } else {
+      console.log(tbl.data)
+      //dom('tr').each((idx, ele) => {
+      */
   })
   res.summary = calcCovid19DataSummary(res)
   return res
@@ -86,10 +111,14 @@ const calcCovid19DataSummary = function(json) {
   return {
     'n_inspections': calcSum(json.inspection, 'ninspect'),
     'n_patients': calcSum(json.inspection, 'npatient'),
+    /*
     'n_light': 0,
     'n_heavy': 0,
     'n_exit': 0,
     'n_death': 0,
+    */
+    'n_capacity_pcr_per_day': 66, // https://www.pref.fukui.lg.jp/doc/kenkou/kansensyo-yobousessyu/corona_d/fil/200319-1.pdf
+    'n_capacity_bed': 48,
     's_lastUpdate': json.lastUpdate,
   }
 }
@@ -99,9 +128,9 @@ const getCovid19DataSummaryForIchigoJam = async function() {
 }
 
 const main = async function() {
-  const data = await getCovid19DataJSON()
+  const data = await getCovid19DataJSON(1000 * 60)
   console.log(data)
-  console.log(await getCovid19DataSummaryForIchigoJam())
+  //console.log(await getCovid19DataSummaryForIchigoJam())
 }
 if (require.main === module) {
   main()

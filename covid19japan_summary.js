@@ -9,6 +9,7 @@ const pdf2text = require('./pdf2text.js')
 const PATH = 'data/covid19japan/'
 const URL = 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000164708_00001.html'
 const BASEURL = 'https://www.mhlw.go.jp'
+const CACHE_TIME = 10 * 60 * 1000 // 10min
 
 const getCovid19Data = async function(cachetime) {
   return await util.getWebWithCache(URL, PATH, cachetime)
@@ -16,12 +17,17 @@ const getCovid19Data = async function(cachetime) {
 const getLastUpdate = function(fn) {
   return util.getLastUpdateOfCache(URL, PATH)
 }
-
 const getCovid19DataJSON = async function(cachetime) {
   const data = await util.getCache(async function() {
     return await fetchCovid19DataJSON(cachetime)
   }, 'data/covid19japan/', '-summary.json', cachetime)
   return JSON.parse(data)
+}
+const startUpdate = function() {
+  setInterval(async function() {
+    console.log('update')
+    await getCovid19DataJSON(CACHE_TIME)
+  }, CACHE_TIME)
 }
 const fetchCovid19DataJSON = async function(cachetime) {
   const data = await getCovid19Data(cachetime)
@@ -261,6 +267,7 @@ const main = async function() {
 if (require.main === module) {
   main()
 } else {
+  startUpdate()
 }
 
 exports.getCovid19DataJSON = getCovid19DataJSON
