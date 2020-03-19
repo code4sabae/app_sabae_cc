@@ -7,6 +7,12 @@ const fs = require('fs')
 const fetch = require('node-fetch')
 const child_process = require('child_process')
 
+const normalizeText = function(s) {
+	s = s.replace(/⻘/g, '青')
+	s = s.replace(/⻑/g, '長')
+	return s
+}
+
 const pdf2text = async function(fn) {
 	return new Promise((resolve, reject) => {
 		const cmd = 'pdftotext -layout -raw -nopgbrk ' + fn + ' -'
@@ -14,7 +20,7 @@ const pdf2text = async function(fn) {
 			if (error) {
 				reject(error)
 			} else {
-				resolve(stdout)
+				resolve(normalizeText(stdout))
 			}
 		})
 	})

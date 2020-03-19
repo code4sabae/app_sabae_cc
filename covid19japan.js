@@ -60,9 +60,7 @@ const getDataJSON = async function(title, text2json) {
   const weeks = []
   const res = {}
   dom('a').each((idx, ele) => {
-    if (ele.children.length == 0)
-      return
-    const text = ele.children[0].data
+    const text = dom(ele).text()
     if (text && text.startsWith(title)) {
       res.dt = parseDate(text)
       const href = dom(ele).attr("href")
@@ -72,9 +70,13 @@ const getDataJSON = async function(title, text2json) {
   return await getJSONbyPDF(text2json, res.dt, res.url)
 }
 const getJSONbyPDF = async function(text2json, dt, url) {
+  /*
   if (dt.endsWith(":00"))
     dt = dt.substring(0, dt.length - 3)
   const fn = PATH + dt
+  */
+  const fn = PATH + url.substring(url.lastIndexOf('/') + 1)
+  console.log(fn)
   try {
     const data = fs.readFileSync(fn + ".json")
     return JSON.parse(data)
@@ -84,7 +86,8 @@ const getJSONbyPDF = async function(text2json, dt, url) {
 	fs.writeFileSync(fn + ".pdf", new Buffer.from(pdf), 'binary')
   const txt = await pdf2text.pdf2text(fn + ".pdf")
   const json = text2json(txt, url, dt)
-  fs.writeFileSync(fn + ".json", JSON.stringify(json))
+  if (json != null)
+    fs.writeFileSync(fn + ".json", JSON.stringify(json))
   return json
 }
 
@@ -94,6 +97,13 @@ const parseNumber = function(s) {
   const num = s.match(/.+ (\d+) 名/)
   //console.log(s, num)
   return parseInt(num[1])
+}
+const getAreas = function() {
+  const area = []
+  for (let i = 0; i < PREF.length; i++) {
+    area[i] = { name: PREF_EN[i], name_jp: PREF[i] }
+  }
+  return area
 }
 const text2jsonWithoutCruise = function(txt, url, dt) {
   const res = {}
@@ -125,15 +135,23 @@ const text2jsonWithInspections = function(txt, url, dt) {
     return s
   }
 
+  const isNumber = function(n) {
+    if (n == undefined)
+      return false
+    if (isNaN(n))
+      return false
+    return parseInt(n) == n
+  }
+
   const res = {}
   const ss = txt.split('\n')
   /*
-  let desc = ""
-  for (let i = 25; i < ss.length - 3; i++)
-    desc += ss[i]
+  for (let i = 0; i < ss.length; i++) {
+    console.log(i, ss[i])
+  }
   */
   let title = ""
-  for (let i = ss.length - 3; i < ss.length; i++)
+  for (let i = 25; i < ss.length; i++)
     title += ss[i]
   //res.title = title
   res.srcurl_pdf = url
@@ -143,10 +161,7 @@ const text2jsonWithInspections = function(txt, url, dt) {
   res.npatients = 0
   res.ninspections = 0
 
-  const area = []
-  for (let i = 0; i < PREF.length; i++) {
-    area[i] = { name: PREF_EN[i], name_jp: PREF[i] }
-  }
+  const area = getAreas()
   area[47] = { name: 'Japan', name_jp: "合計" }
   for (let i = 1; i <= 48 / 2; i++) {
     const ss2 = ss[i].split(' ')
@@ -161,10 +176,82 @@ const text2jsonWithInspections = function(txt, url, dt) {
         area2.ninspections = parsePeopleCount(ss2[j + 2])
       }
     }
+    if (!isNumber(area1.npatients) || !isNumber(area2.npatients))
+      return null
   }
+  if (area.length != 48)
+    return null
+  
+  //console.log(area.length)
   res.npatients = area[47].npatients
   res.ninspections = area[47].ninspections
   area.pop()
+  res.area = area
+  return res
+}
+const text2jsonWithCurrentPatients = function(txt, url, dt) {
+  const parseDate = function(s) {
+    const fix0 = util.fix0
+    s = util.toHalf(s)
+    // ３月18日(水)
+    // 3月18日(水) 対前日比
+    let num = s.match(/(\d+)月(\d+)日\(.\) .+/)
+    if (num) {
+      const y = new Date().getFullYear()
+      const m = parseInt(num[1])
+      const d = parseInt(num[2])
+      return y + "-" + fix0(m, 2) + "-" + fix0(d, 2)
+    }
+    return "--"
+  }
+//  console.log(txt, url, dt)
+  const ss = txt.split('\n')
+  const res = {}
+  res.srcurl_pdf = url
+  res.srcurl_web = URL
+  res.description = null
+  res.lastUpdate = dt
+  res.npatients = 0
+  res.nexits = 0
+  res.ndeaths = 0
+  res.ncurrentpatients = 0
+  //res.ninspections = 0
+  res.lastUpdate = parseDate(ss[0])
+
+  const area = getAreas()
+  for (let i = 0; i < area.length; i++) {
+    const a = area[i]
+    a.npatients = 0
+    a.ncurrentpatients = 0
+    a.nexits = 0
+    a.ndeaths = 0
+  }
+  for (let i = 1;; i++) {
+    const ss2 = ss[i].split(' ')
+    const pref = ss2[0]
+    if (pref == '総計') {
+      const ss3 = ss[i].split(' ')
+      const a = res
+      a.npatients = parseInt(ss3[1])
+      a.ncurrentpatients = parseInt(ss3[3])
+      a.nexits = parseInt(ss3[5])
+      a.ndeaths = parseInt(ss3[7])
+      a.description = ss[i + 1]
+      break
+    }
+    const npref = PREF.indexOf(pref)
+    if (npref == -1)
+      return null
+    const a = area[npref]
+    a.npatients = parseInt(ss2[1])
+    a.ncurrentpatients = parseInt(ss2[3])
+    a.nexits = parseInt(ss2[5])
+    a.ndeaths = parseInt(ss2[7])
+    if (a.npatients != a.ncurrentpatients + a.nexits + a.ndeaths) {
+      console.log("***** " + pref)
+      return null
+    }
+  }
   res.area = area
   return res
 }
@@ -184,25 +271,38 @@ const getCovid19DataJSON = async function(type) {
   if (type == 'withpcr') {
     return await getDataJSON('新型コロナウイルス陽性者数とPCR検査実施人数（都道府県別）', text2jsonWithInspections)
   }
-  return await getDataJSON('国内事例における都道府県別の患者報告数', text2jsonWithoutCruise)
+  return await getDataJSON('新型コロナウイルス感染症（国内事例）の入退院の状況（都道府県別）', text2jsonWithCurrentPatients)
+
+  //return await getDataJSON('国内事例における都道府県別の患者報告数', text2jsonWithoutCruise)
 }
 
 const test = async function() {
-  const fn = "data/covid19japan/2020-03-13"
+  const fn = "data/covid19japan/2020-03-19"
   const txt = await pdf2text.pdf2text(fn + ".pdf")
-  const json = text2jsonWithInspections(txt, "url", "2020-03-13")
+  const json = text2jsonWithInspections(txt, "url", "2020-03-19")
+  console.log(json)
+}
+const test2 = async function() {
+  const fn = "data/covid19japan/000610352.pdf"
+  const txt = await pdf2text.pdf2text(fn + ".pdf")
+  const json = text2jsonWithCurrentPatients(txt, "url", "2020-03-19")
   console.log(json)
 }
 const main = async function() {
   //test()
+  //test2()
   //return
 
-  await util.getWebWithCache(URL, PATH, CACHE_TIME)
+//  await util.getWebWithCache(URL, PATH, CACHE_TIME)
   const data = await getCovid19DataJSON()
   console.log(data)
-  console.log(await getCovid19DataSummaryForIchigoJam())
+  
+/*
+  //console.log(await getCovid19DataSummaryForIchigoJam())
   const data1 = await getCovid19DataJSON('withpcr')
   console.log(data1)
+  */
+  
 }
 if (require.main === module) {
   main()

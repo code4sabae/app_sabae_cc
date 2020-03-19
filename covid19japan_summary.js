@@ -79,6 +79,8 @@ const fetchCovid19DataJSON = async function(cachetime) {
   } else {
     json = await getJSONbyImage(url)
   }
+  if (!json)
+    return null
   return JSON.stringify(json)
 }
 
@@ -143,6 +145,8 @@ const getCurrentPatients = async function(fn) {
   res.nexits = '157'
   res.nlighters = '13'
   */
+  if (!res.ncurrentpatients)
+    return null
   return res
 }
 const DEBUG = false
@@ -236,6 +240,9 @@ const getCurrentPatientsByPDF = async function(fn) {
   res.ndeaths = parseNum(ss[4])
   res.ncurrentpatients = parseNum(ss[3].substring(ss[3].indexOf('）') + 1))
   res.nlighters = parseNum(ss[23].substring(ss[23].indexOf('者') + 1))
+
+  if (!res.ncurrentpatients)
+    return null
   return res
 }
 const getJSONbyPDF = async function(url) {
@@ -248,6 +255,8 @@ const getJSONbyPDF = async function(url) {
   const img = await (await fetch(url)).arrayBuffer()
   fs.writeFileSync(fn, new Buffer.from(img), 'binary')
   const json = await getCurrentPatientsByPDF(fn)
+  if (!json)
+    return null
   json.srcurl_pdf = url
   json.srcurl_web = URL
   fs.writeFileSync(fn + ".json", JSON.stringify(json))

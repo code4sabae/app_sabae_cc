@@ -141,6 +141,10 @@ exports.getCache = async function(asyncfetch, path, ext, cachetime) {
   } catch (e) {
   }
   let data = await asyncfetch()
+  if (!data) {
+    //console.log("can't fetch or convert")
+    return cache
+  }
   if (data == cache) {
     //console.log("same as cache")
     //fs.writeFileSync(fnlatest, data)
