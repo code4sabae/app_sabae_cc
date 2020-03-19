@@ -25,6 +25,8 @@ const covid19japan = require('./covid19japan.js')
 const covid19japan_summary = require('./covid19japan_summary.js')
 const covid19kyoto = require('./covid19kyoto.js')
 
+const covid19cio = require('./covid19cio.js')
+
 const googlespreadsheet = require('./googlespreadsheet.js')
 
 const countLog = function(name) {
@@ -147,6 +149,12 @@ server.on('request', async function(req, res) {
     res.end(data)
     return
 
+  } else if (req.url.startsWith('/api/covid19cio.json')) {
+    const data = await covid19cio.getCovid19DataJSON()
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
+    res.end(JSON.stringify(data))
+    return
+  
   } else if (req.url.startsWith('/api/googlespreadsheet.json')) {
     const params = urllib.parse(req.url, true)
     const key = params.query.key

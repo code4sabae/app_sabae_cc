@@ -25,7 +25,6 @@ const getCovid19DataJSON = async function(cachetime) {
 }
 const startUpdate = function() {
   setInterval(async function() {
-    console.log('update')
     await getCovid19DataJSON(CACHE_TIME)
   }, CACHE_TIME)
 }

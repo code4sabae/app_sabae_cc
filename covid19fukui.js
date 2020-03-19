@@ -111,12 +111,10 @@ const calcCovid19DataSummary = function(json) {
   return {
     'n_inspections': calcSum(json.inspection, 'ninspect'),
     'n_patients': calcSum(json.inspection, 'npatient'),
-    /*
-    'n_light': 0,
+    'n_light': 1,
     'n_heavy': 0,
     'n_exit': 0,
     'n_death': 0,
-    */
     'n_capacity_pcr_per_day': 66, // https://www.pref.fukui.lg.jp/doc/kenkou/kansensyo-yobousessyu/corona_d/fil/200319-1.pdf
     'n_capacity_bed': 48,
     's_lastUpdate': json.lastUpdate,
