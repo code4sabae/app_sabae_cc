@@ -1,5 +1,6 @@
 const fs = require('fs')
 const fetch = require('node-fetch')
+const iconv = require('iconv-lite')
 
 exports.simplejson2txt = function(json) {
   if (typeof json == 'string') {
@@ -68,6 +69,21 @@ exports.toHalf = function(s) {
   }
   return s2
 }
+exports.toHalfNumber = function(s) {
+  const ZEN = "０１２３４５６７８９"
+  const HAN = "0123456789"
+  let s2 = ""
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charAt(i)
+    const n = ZEN.indexOf(c)
+    if (n >= 0) {
+      s2 += HAN.charAt(n)
+    } else {
+      s2 += c
+    }
+  }
+  return s2
+}
 exports.mkdirSyncForFile = function(fn) {
   const dirs = fn.split('/')
   let dir = ""
@@ -89,7 +105,15 @@ exports.getExtFromURL = function(url) {
   }
   return ext
 }
-exports.getWebWithCache = async function(url, path, cachetime) {
+exports.fetchText = async function(url, enc) {
+  if (!enc) {
+    return await (await fetch(url)).text()
+  }
+  const abuf = await (await fetch(url)).arrayBuffer()
+  var buf = new Buffer.from(abuf, 'binary')
+  return iconv.decode(buf, enc)
+}
+exports.getWebWithCache = async function(url, path, cachetime, enc) {
   const ext = exports.getExtFromURL(url)
   const fnlatest = path + "_latest" + ext
   const fn = path + exports.getYMDHMS() + ext
@@ -106,7 +130,12 @@ exports.getWebWithCache = async function(url, path, cachetime) {
     }
   } catch (e) {
   }
-  const data = await (await fetch(url)).text()
+  let data = null
+  try {
+    data = await exports.fetchText(url, enc)
+  } catch (e) {
+    console.log(e)
+  }
   if (data == cache) {
     //console.log("same as cache")
     //fs.writeFileSync(fnlatest, data)
@@ -176,8 +205,36 @@ exports.getLastUpdateOfCache = function(url, path) {
 exports.JAPAN_PREF = [ "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県" ]
 exports.JAPAN_PREF_EN = [ "Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Ibaraki", "Tochigi", "Gunma", "Saitama", "Chiba", "Tokyo", "Kanagawa", "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano", "Gifu", "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo", "Nara", "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi", "Tokushima", "Kagawa", "Eihime", "Kochi", "Fukuoka", "Saga", "Nagasaki", "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa" ]
 
+exports.makeURL = function(url, relurl) {
+  if (relurl.startsWith("http://") || relurl.startsWith("https://"))
+    return relurl
+  if (relurl.indexOf("..") >= 0) {
+    throw "not supported '..' utils.makeURL"
+  }
+  if (relurl.startsWith('/')) {
+    const n = url.indexOf('/', 8)
+    if (n >= 0)
+      url = url.substring(0, n)
+    return url + relurl
+  }
+  const n = url.substring(8).lastIndexOf('/')
+  if (n < 0)
+    return url + "/" + relurl
+  return url.substring(0, n + 8 + 1) + relurl
+}
+exports.test = function(t1, t2) {
+  if (t1 == t2)
+    return
+  console.log(t1, t2)
+  throw 'err on util.test'
+}
 const test = async function() {
   console.log(exports.formatYMDHMS(new Date()))
+  exports.test(exports.makeURL('http://sabae.cc/', 'test.html'), 'http://sabae.cc/test.html')
+  exports.test(exports.makeURL('https://sabae.cc/', 'test.html'), 'https://sabae.cc/test.html')
+  exports.test(exports.makeURL('https://sabae.cc', 'test.html'), 'https://sabae.cc/test.html')
+  exports.test(exports.makeURL('https://sabae.cc/', 'https://jig.jp/'), 'https://jig.jp/')
+  exports.test(exports.makeURL('https://sabae.cc/abc/test.html', '/img/'), 'https://sabae.cc/img/')
 }
 
 if (require.main === module) {
