@@ -22,7 +22,7 @@ const covid19fukui = require('./covid19fukui.js')
 const covid19tokushima = require('./covid19tokushima.js')
 const covid19ishikawa = require('./covid19ishikawa.js')
 const covid19japan = require('./covid19japan.js')
-const covid19japan_summary = require('./covid19japan_summary.js')
+//const covid19japan_summary = require('./covid19japan_summary.js')
 const covid19kyoto = require('./covid19kyoto.js')
 
 const covid19cio = require('./covid19cio.js')
@@ -118,6 +118,16 @@ server.on('request', async function(req, res) {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
     res.end(data)
     return
+  } else if (req.url.startsWith('/api/covid19kyoto.json')) {
+    const data = await covid19kyoto.getCovid19DataJSON()
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
+    res.end(JSON.stringify(data))
+    return
+  } else if (req.url.startsWith('/api/covid19kyoto.txt')) {
+    const data = await covid19kyoto.getCovid19DataSummaryForIchigoJam()
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
+    res.end(data)
+    return
   } else if (req.url.startsWith('/api/covid19japan.json')) {
     const type = urllib.parse(req.url, true).query.type
     const data = await covid19japan.getCovid19DataJSON(type)
@@ -129,25 +139,19 @@ server.on('request', async function(req, res) {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
     res.end(data)
     return
-  } else if (req.url.startsWith('/api/covid19japan_summary.json')) {
-    const data = await covid19japan_summary.getCovid19DataJSON()
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
-    res.end(JSON.stringify(data))
-    return
-  } else if (req.url.startsWith('/api/covid19japan_summary.txt')) {
-    const data = await covid19japan_summary.getCovid19DataSummaryForIchigoJam()
-    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
-    res.end(data)
-    return
-  } else if (req.url.startsWith('/api/covid19kyoto.json')) {
-    const data = await covid19kyoto.getCovid19DataJSON()
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
-    res.end(JSON.stringify(data))
-    return
-  } else if (req.url.startsWith('/api/covid19kyoto.txt')) {
-    const data = await covid19kyoto.getCovid19DataSummaryForIchigoJam()
-    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
-    res.end(data)
+  } else if (req.url.startsWith('/api/covid19japan_summary.')) {
+    //const data = await covid19japan_summary.getCovid19DataJSON()
+    const data = await covid19japan.getCovid19DataJSON()
+    const nbed = await bedforinfection.getSummaryJSON()
+    data.nbedforinfection = nbed.total.sumi
+    delete data.area
+    delete data.description
+    if (req.url.endsWith(".json")) {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
+      res.end(JSON.stringify(data))
+    } else if (req.url.endsWith(".txt")) {
+      res.end(util.simplejson2txt(data))
+    }
     return
 
   } else if (req.url.startsWith('/api/covid19cio.json')) {

@@ -18,10 +18,24 @@ const getLastUpdate = function(fn) {
   return util.getLastUpdateOfCache(URL, PATH)
 }
 const getCovid19DataJSON = async function(cachetime) {
+//  緊急
+  const data = {
+    lastUpdate: '2020-03-20T18:00',
+    npatients: '996',
+    nexits: '232',
+    ndeaths: '35',
+    ncurrentpatients: '729',
+    nlighters: '18',
+    srcurl_img: 'https://www.mhlw.go.jp/content/10900000/000610718.jpg',
+    srcurl_web: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000164708_00001.html'
+  }
+  return data
+  /*
   const data = await util.getCache(async function() {
     return await fetchCovid19DataJSON(cachetime)
   }, 'data/covid19japan/', '-summary.json', cachetime)
   return JSON.parse(data)
+  */
 }
 const startUpdate = function() {
   setInterval(async function() {
