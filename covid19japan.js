@@ -19,6 +19,12 @@ const getCovid19Data = async function() {
 const getLastUpdate = function(fn) {
   return util.getLastUpdateOfCache(URL, PATH)
 }
+const getCovid19DataJSON = async function(type, cachetime) {
+  const data = await util.getCache(async function() {
+    return await fetchCovid19DataJSON(type, cachetime)
+  }, 'data/covid19japan/', '-' + (type ? type : "default") + '.json', cachetime)
+  return JSON.parse(data)
+}
 const startUpdate = function() {
   setInterval(async function() {
     await util.getWebWithCache(URL, PATH, CACHE_TIME)
@@ -76,7 +82,6 @@ const getJSONbyPDF = async function(text2json, dt, url) {
   const fn = PATH + dt
   */
   const fn = PATH + url.substring(url.lastIndexOf('/') + 1)
-  console.log(fn)
   try {
     const data = fs.readFileSync(fn + ".json")
     return JSON.parse(data)
@@ -267,11 +272,13 @@ const getCovid19DataSummaryForIchigoJam = async function() {
   return util.simplejson2txt(summary)
 }
 //
-const getCovid19DataJSON = async function(type) {
+const fetchCovid19DataJSON = async function(type) {
   if (type == 'withpcr') {
-    return await getDataJSON('新型コロナウイルス陽性者数とPCR検査実施人数（都道府県別）', text2jsonWithInspections)
+    return JSON.stringify(await getDataJSON('新型コロナウイルス陽性者数とPCR検査実施人数（都道府県別）', text2jsonWithInspections))
   }
-  return await getDataJSON('新型コロナウイルス感染症（国内事例）の入退院の状況（都道府県別）', text2jsonWithCurrentPatients)
+  //const title = ''新型コロナウイルス感染症（国内事例）の入退院の状況（都道府県別）'
+  const title = '国内事例における都道府県別の患者報告数'
+  return JSON.stringify(await getDataJSON(title, text2jsonWithCurrentPatients))
 
   //return await getDataJSON('国内事例における都道府県別の患者報告数', text2jsonWithoutCruise)
 }
@@ -296,7 +303,10 @@ const main = async function() {
 //  await util.getWebWithCache(URL, PATH, CACHE_TIME)
   const data = await getCovid19DataJSON()
   console.log(data)
-  
+
+  const data2 = await getCovid19DataJSON('withpcr')
+  console.log(data2)
+
 /*
   //console.log(await getCovid19DataSummaryForIchigoJam())
   const data1 = await getCovid19DataJSON('withpcr')

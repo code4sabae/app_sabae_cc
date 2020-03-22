@@ -169,7 +169,12 @@ exports.getCache = async function(asyncfetch, path, ext, cachetime) {
     }
   } catch (e) {
   }
-  let data = await asyncfetch()
+  let data = null
+  try {
+    data = await asyncfetch()
+  } catch (e) {
+    console.log('asyncfetch err', e)
+  }
   if (!data) {
     //console.log("can't fetch or convert")
     return cache
