@@ -19,7 +19,8 @@ const getCovid19Data = async function() {
 const getLastUpdate = function(fn) {
   return util.getLastUpdateOfCache(URL, PATH)
 }
-const getCovid19DataJSON = async function(type, cachetime) {
+const getCovid19DataJSON = async function(type) {
+  cachetime = CACHE_TIME
   const data = await util.getCache(async function() {
     return await fetchCovid19DataJSON(type, cachetime)
   }, 'data/covid19japan/', '-' + (type ? type : "default") + '.json', cachetime)
@@ -222,7 +223,7 @@ const text2jsonWithCurrentPatients = function(txt, url, dt) {
   res.ncurrentpatients = 0
   //res.ninspections = 0
   res.lastUpdate = parseDate(ss[0])
-
+  
   const area = getAreas()
   for (let i = 0; i < area.length; i++) {
     const a = area[i]
@@ -253,8 +254,8 @@ const text2jsonWithCurrentPatients = function(txt, url, dt) {
     a.nexits = parseInt(ss2[5])
     a.ndeaths = parseInt(ss2[7])
     if (a.npatients != a.ncurrentpatients + a.nexits + a.ndeaths) {
-      console.log("***** " + pref)
-      return null
+      console.log("***** " + pref, a.ncurrentpatients, a.nexits, a.ndeaths)
+      //return null
     }
   }
   res.area = area
@@ -299,13 +300,17 @@ const main = async function() {
   //test()
   //test2()
   //return
+  //fetchCovid19DataJSON()
+  //return
 
-//  await util.getWebWithCache(URL, PATH, CACHE_TIME)
+  await util.getWebWithCache(URL, PATH, CACHE_TIME)
+  //return
   const data = await getCovid19DataJSON()
   console.log(data)
 
-  const data2 = await getCovid19DataJSON('withpcr')
-  console.log(data2)
+
+  //const data2 = await getCovid19DataJSON('withpcr')
+  //console.log(data2)
 
 /*
   //console.log(await getCovid19DataSummaryForIchigoJam())

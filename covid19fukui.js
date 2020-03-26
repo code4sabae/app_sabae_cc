@@ -111,7 +111,7 @@ const calcCovid19DataSummary = function(json) {
   return {
     'n_inspections': calcSum(json.inspection, 'ninspect'),
     'n_patients': calcSum(json.inspection, 'npatient'),
-    'n_light': 1,
+    'n_light': calcSum(json.inspection, 'npatient'),
     'n_heavy': 0,
     'n_exit': 0,
     'n_death': 0,

@@ -138,7 +138,7 @@ const makeSummary = function(data) {
     d.sum2 = sum(data['第二種感染症指定医療機関'], '感染症病床')
     d.sumk = sum(data['第二種感染症指定医療機関'], '結核病床(稼働病床)')
     d.sums = sum(data['第二種感染症指定医療機関'], '一般病床又は精神病床')
-    d.sumi = d.sumt + d.sum1 + d.sum2 + d.sumk
+    d.sumi = d.sumt + d.sum1 + d.sum2
     d.sum = d.sumi + d.sums
     res.push(d)
   }
